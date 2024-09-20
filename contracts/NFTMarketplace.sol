@@ -28,7 +28,7 @@ contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
     event NFTListedSuccessfully(uint256 tokenId, uint256 price);
     event NFTSoldSuccessfully(uint256 tokenId, address buyer, uint256 price);
 
-    constructor() ERC721("NFTMarketplace", "NFTM") Ownable(msg.sender) {}
+    constructor() ERC721("JangNFT", "JNFT") Ownable(msg.sender) {}
 
     function mintNFT(string memory tokenURI, uint256 price) public onlyOwner returns (uint256) {
         tokenIds++;
@@ -65,7 +65,7 @@ contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
     function buyNFT(uint256 tokenId) public payable nonReentrant {
         NFT memory nft = nftList[tokenId];
 
-        if(!nft.forSale){
+        if(nft.forSale == false){
             revert ThisNFTIsNotForSale();
         }
 
