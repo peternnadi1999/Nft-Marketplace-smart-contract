@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
 
 contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
     uint256 tokenIds;
@@ -19,9 +19,14 @@ contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
 
     mapping(uint256 => NFT) public nftList;
 
-    event NFTMinted(uint256 tokenId, address owner, string tokenURI);
-    event NFTListed(uint256 tokenId, uint256 price);
-    event NFTSold(uint256 tokenId, address buyer, uint256 price);
+    error YouAreNotTheOwnerOfThisNFT();
+    error PriceMustBeGreaterThanZero();
+    error ThisNFTIsNotForSale();
+    error InsufficientFundsToBuyThisNFT();
+
+    event NFTMintedSuccessfully(uint256 tokenId, address owner, string tokenURI);
+    event NFTListedSuccessfully(uint256 tokenId, uint256 price);
+    event NFTSoldSuccessfully(uint256 tokenId, address buyer, uint256 price);
 
     constructor() ERC721("NFTMarketplace", "NFTM") Ownable(msg.sender) {}
 
@@ -39,24 +44,34 @@ contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
             forSale: false
         });
 
-        emit NFTMinted(newItemId, msg.sender, tokenURI);
+        emit NFTMintedSuccessfully(newItemId, msg.sender, tokenURI);
         return newItemId;
     }
 
     function listNFT(uint256 tokenId, uint256 price) public {
-        require(ownerOf(tokenId) == msg.sender, "You are not the owner of this NFT");
-        require(price > 0, "Price must be greater than zero");
+        if(ownerOf(tokenId) != msg.sender){
+            revert YouAreNotTheOwnerOfThisNFT();
+        }
+        if(price < 0){
+            revert PriceMustBeGreaterThanZero();
+        }
 
         nftList[tokenId].price = price;
         nftList[tokenId].forSale = true;
 
-        emit NFTListed(tokenId, price);
+        emit NFTListedSuccessfully(tokenId, price);
     }
 
-    function buyNFT(uint256 tokenId) public payable {
+    function buyNFT(uint256 tokenId) public payable nonReentrant {
         NFT memory nft = nftList[tokenId];
-        require(nft.forSale, "This NFT is not for sale");
-        require(msg.value >= nft.price, "Insufficient funds to buy this NFT");
+
+        if(!nft.forSale){
+            revert ThisNFTIsNotForSale();
+        }
+
+        if(msg.value <= nft.price){
+            revert InsufficientFundsToBuyThisNFT();
+        }
 
         address payable seller = nft.owner;
         nft.owner = payable(msg.sender);
@@ -65,11 +80,13 @@ contract NFTMarketplace is ERC721URIStorage, Ownable, ReentrancyGuard {
         _transfer(seller, msg.sender, tokenId);
         seller.transfer(msg.value);
 
-        emit NFTSold(tokenId, msg.sender, nft.price);
+        emit NFTSoldSuccessfully(tokenId, msg.sender, nft.price);
     }
 
-    function transferNFT(address to, uint256 tokenId) public {
-        require(ownerOf(tokenId) == msg.sender, "You are not the owner of this NFT");
+    function transferNFT(address to, uint256 tokenId) public nonReentrant {
+         if(ownerOf(tokenId) != msg.sender){
+            revert YouAreNotTheOwnerOfThisNFT();
+        }
 
         _transfer(msg.sender, to, tokenId);
     }
