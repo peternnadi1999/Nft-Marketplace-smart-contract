@@ -142,7 +142,7 @@ describe("NFTMarketplace", function () {
         .connect(owner)
         .mintNFT(
           "https://github.com/peternnadi1999/Nft-Marketplace-smart-contract",
-          ethers.parseEther("1")
+          900
         );
 
       let tokenId = 1;
@@ -153,21 +153,21 @@ describe("NFTMarketplace", function () {
         "ThisNFTIsNotForSale"
       );
 
-      await nftMarketplace.connect(owner).listNFT(tokenId, ethers.parseEther("1"));
+      await nftMarketplace.connect(owner).listNFT(tokenId, 900);
 
       await expect(
         nftMarketplace
           .connect(otherAccount)
-          .buyNFT(tokenId, { value: ethers.parseEther("0.5") })
+          .buyNFT(tokenId, { value: 500})
       ).revertedWithCustomError(
         nftMarketplace,
         "InsufficientFundsToBuyThisNFT"
       );
 
 
-      await expect(nftMarketplace.connect(otherAccount).buyNFT(tokenId, { value: ethers.parseEther("1") }))
+      await expect(nftMarketplace.connect(otherAccount).buyNFT(tokenId, { value: 1000 }))
         .to.emit(nftMarketplace, "NFTSoldSuccessfully")
-        .withArgs(tokenId, otherAccount, ethers.parseEther("1"));
+        .withArgs(tokenId, otherAccount, 900)
     });
   });
 });
